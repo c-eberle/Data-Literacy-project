@@ -1,2 +1,2 @@
 # Data-Literacy-project
-# Cum Tempore Eberle, Wamuel Soerz
+Cum Tempore Eberle, Wamuel Soerz
