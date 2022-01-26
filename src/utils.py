@@ -72,3 +72,14 @@ def n_fold_ceval(n, data, gt, test_size):
         
         
     return loss_list, coef_list
+    
+    
+def print_corr(corr, threshold=0.85):
+    for name, values in corr.iteritems():
+        print()
+        print('\nTarget indicator: ', name)
+        print('Correlated Indicators:')
+        for i in range(0, corr.shape[1]):
+            if threshold < values[i] < 1:
+                name = corr.columns[i]
+                print('{name}: {value}'.format(name=name, value=values[i]))
