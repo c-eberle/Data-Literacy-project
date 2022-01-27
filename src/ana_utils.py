@@ -52,7 +52,7 @@ def split_data(data, gt, test_size=30):
     return train_set, test_set, train_gt, test_gt
 
 
-def n_fold_ceval(n, data, gt, test_size):
+def n_fold_ceval(n, data, gt, test_size, scaling):
     """
     perform n-fold validation
     
@@ -62,6 +62,9 @@ def n_fold_ceval(n, data, gt, test_size):
     """
     loss_list = []
     coef_list = []
+
+    assert scaling in ["normalize", "standardized", "no_scaling"]
+
     for i in range(0,n):
         train, test, train_gt, test_gt = split_data(data, gt, test_size)
         
