@@ -63,8 +63,13 @@ def n_fold_ceval(n, data, gt, test_size, scaling):
     loss_list = []
     coef_list = []
 
-    assert scaling in ["normalize", "standardized", "no_scaling"]
+    assert scaling in ["normalize", "standardize", "no_scaling"]
 
+    if scaling == "normalize":
+        data[:] = sklearn.preprocessing.normalize(data, axis=0)
+    elif scaling == "standardize":
+        data[:] = sklearn.preprocessing.StandardScaler().fit_transform(data)
+    
     for i in range(0,n):
         train, test, train_gt, test_gt = split_data(data, gt, test_size)
         
