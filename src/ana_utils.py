@@ -52,7 +52,7 @@ def split_data(data, gt, test_size=30):
     return train_set, test_set, train_gt, test_gt
 
 
-def n_fold_ceval(n, data, gt, test_size, scaling):
+def n_fold_ceval(n, data, gt, test_size, scaling, reg_model):
     """
     perform n-fold validation
     
@@ -73,7 +73,7 @@ def n_fold_ceval(n, data, gt, test_size, scaling):
     for i in range(0,n):
         train, test, train_gt, test_gt = split_data(data, gt, test_size)
         
-        reg = LinearRegression().fit(train, train_gt)
+        reg = reg_model.fit(train, train_gt)
         test_pred = reg.predict(test)
         loss = sklearn.metrics.mean_squared_error(test_gt, test_pred)
         coefs = reg.coef_
