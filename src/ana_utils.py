@@ -57,7 +57,8 @@ def n_fold_ceval(n, data, gt, test_size):
     perform n-fold validation
     
     args: number of validations (n), dataset of indicators (data), groundtruth data (gt), size of test set (test size), loss function (loss)
-    returns: list of length n, each entry contains loss for one validation loop
+    returns: list of losses for the n models, mean loss, 
+             list of arrays with the coeffcients for the n models, the average size for each coefficient (rounded)
     """
     loss_list = []
     coef_list = []
@@ -70,9 +71,15 @@ def n_fold_ceval(n, data, gt, test_size):
         coefs = reg.coef_
         loss_list.append(loss)
         coef_list.append(coefs)
+
+    # calculate mean loss
+    loss_arr = np.array(loss_list)
+    mean_loss = loss_arr.mean()
+
+    # calculate and round average coefficients
+    avg_coefs = np.around(np.mean(coef_list, axis=0), 4)
         
-        
-    return loss_list, coef_list
+    return loss_list, mean_loss, coef_list, avg_coefs
     
     
 def print_corr(corr, threshold=0.85):
