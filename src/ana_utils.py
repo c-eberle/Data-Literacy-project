@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sklearn
 from sklearn.linear_model import LinearRegression
+from collections import Counter
 
 
 def sklearn_vif(exogs, data):
