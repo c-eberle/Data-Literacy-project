@@ -89,7 +89,7 @@ def n_fold_ceval(n, data, gt, test_size, scaling):
         
     return loss_list, mean_loss, coef_list, avg_coefs
     
-def corr_counter(corr, threshold=0.85, verbose=False):
+def corr_counter_old(corr, threshold=0.85, verbose=False):
     corr_dict = {}
     for name, values in corr.iteritems():
         if verbose:
@@ -98,11 +98,18 @@ def corr_counter(corr, threshold=0.85, verbose=False):
             print('Correlated Indicators:')
         corr_count = 0
         for i in range(0, corr.shape[1]):   
-            if threshold < values[i] < 1:
+            if threshold < abs(values[i]) < 1:
                 name = corr.columns[i]
                 if verbose:
                     print('{name}: {value}'.format(name=name, value=values[i]))
                 corr_count += 1
 
         corr_dict[name] = corr_count
+    return corr_dict
+
+def corr_counter(corr):
+    corr_dict = {}
+    for name, values in corr.iteritems():
+        for i in range(0, corr.shape[1]):   
+            corr_dict[name] = sum(abs(values))
     return corr_dict
