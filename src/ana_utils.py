@@ -9,33 +9,6 @@ from sklearn.linear_model import LinearRegression
 from collections import Counter
 
 
-def sklearn_vif(exogs, data):
-
-    # initialize dictionaries
-    vif_dict, tolerance_dict = {}, {}
-
-    # form input data for each exogenous variable
-    for exog in exogs:
-        not_exog = [i for i in exogs if i != exog]
-        X, y = data[not_exog], data[exog]
-
-        # extract r-squared from the fit
-        r_squared = LinearRegression().fit(X, y).score(X, y)
-
-        # calculate VIF
-        vif = 1/(1 - r_squared)
-        vif_dict[exog] = round(vif, 1)
-
-        # calculate tolerance
-        tolerance = 1 - r_squared
-        tolerance_dict[exog] = round(tolerance,4)
-
-    # return VIF DataFrame
-    df_vif = pd.DataFrame({'VIF': vif_dict, 'Tolerance': tolerance_dict})
-
-    return df_vif
-
-
 def split_data(data, gt, test_size=30):
     """
     split dataset into train and test set
@@ -88,28 +61,3 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling):
     avg_coefs = np.around(np.mean(coef_list, axis=0), 4)[0]
         
     return loss_list, mean_loss, coef_list, avg_coefs
-    
-def corr_counter_old(corr, threshold=0.85, verbose=False):
-    corr_dict = {}
-    for name, values in corr.iteritems():
-        if verbose:
-            print()
-            print('\nTarget indicator: ', name)
-            print('Correlated Indicators:')
-        corr_count = 0
-        for i in range(0, corr.shape[1]):   
-            if threshold < abs(values[i]) < 1:
-                name = corr.columns[i]
-                if verbose:
-                    print('{name}: {value}'.format(name=name, value=values[i]))
-                corr_count += 1
-
-        corr_dict[name] = corr_count
-    return corr_dict
-
-def corr_counter(corr):
-    corr_dict = {}
-    for name, values in corr.iteritems():
-        for i in range(0, corr.shape[1]):   
-            corr_dict[name] = sum(abs(values))
-    return corr_dict
