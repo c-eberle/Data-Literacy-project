@@ -52,7 +52,7 @@ def split_data(data, gt, test_size=30):
     return train_set, test_set, train_gt, test_gt
 
 
-def n_fold_ceval(n, data, gt, test_size, scaling, reg_model):
+def n_fold_ceval(reg_model, n, data, gt, test_size, scaling):
     """
     perform n-fold validation
     
@@ -85,7 +85,7 @@ def n_fold_ceval(n, data, gt, test_size, scaling, reg_model):
     mean_loss = loss_arr.mean()
 
     # calculate and round average coefficients
-    avg_coefs = np.around(np.mean(coef_list, axis=0), 4)
+    avg_coefs = np.around(np.mean(coef_list, axis=0), 4)[0]
         
     return loss_list, mean_loss, coef_list, avg_coefs
     
