@@ -116,7 +116,8 @@ def visualize_predictions(reg_model, data, gt):
     pred_vals = reg_model.predict(data)
     gt_vals = gt.loc[:,"Ladder score"]
     
-    title=get_title(reg_model) + ", alpha = " + str(reg_model.alpha_)
+    #title=get_title(reg_model) + ", alpha = " + str(reg_model.alpha_)
+    title=get_title(reg_model)
     fig, ax = plt.subplots(figsize=(5, 5))
     plt.scatter(pred_vals, gt_vals)
     ax.plot([0, 1], [0, 1], transform=ax.transAxes, ls="--", c="red")
@@ -131,12 +132,21 @@ def visualize_coefs(reg_model, indicators, n):
     """
     plot values of largest n coefficients
     """
-    coef_df = pd.DataFrame(reg_model.coef_, columns=["Coefficient"], index=indicators)   
+    if get_title(reg_model) == "Least Squares" or get_title(reg_model) == "Ridge":
+        coefs = reg_model.coef_[0]
+    elif get_title(reg_model) == "Lasso":
+        coefs = reg_model.coef_
+    else:
+        raise Exception("reg_model not recognized")
+        
+    coef_df = pd.DataFrame(coefs, columns=["Coefficient"], index=indicators)   
     coef_df.sort_values("Coefficient", inplace=True)
+    
+    title=get_title(reg_model)
     coef_df.iloc[:n,:].plot(kind="barh")
     plt.axvline(x=0, color="grey")
-    plt.xlim([-0.02, 0.02]) #xlim is based on a first test with LassoCV, range may need to be adjusted
-    plt.title(get_title(reg_model))
+    #plt.xlim([-0.02, 0.02]) #xlim is based on a first test with LassoCV, range may need to be adjusted
+    plt.title(title)
     
     return
 
@@ -159,6 +169,7 @@ def get_title(reg_model):
                             remove before submission
                                 ↓↓↓↓↓↓↓↓↓↓↓
 ############################### some testing ######################################
+
 from sklearn import linear_model
 
 wb_data = pd.read_csv("../data/wb_data.csv", index_col="Country Name")
@@ -169,5 +180,17 @@ test_size=1
 alphas = [0.01, 0.1, 1, 10]
 lasso_cv = sklearn.linear_model.LassoCV(alphas=alphas, normalize=True)
 
-loss_list, mean_loss, coef_list, avg_coefs, test_country_list = n_fold_ceval(reg_model=lasso_cv, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="no_scaling")
+loss_list, mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=lasso_cv, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="no_scaling")
+
+visualize_coefs(lasso_cv, wb_data.columns.values, 5)
+
+from sklearn import linear_model
+
+wb_data = pd.read_csv("../data/wb_data.csv", index_col="Country Name")
+wb_data_short = pd.read_csv("../data/wb_data_short.csv", index_col="Country Name")
+whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
+
+test_size=1
+ridge = sklearn.linear_model.Ridge()
+loss_list, mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=ridge, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="no_scaling")
 """
