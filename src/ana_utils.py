@@ -64,21 +64,6 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling):
     avg_coefs = np.around(np.mean(coef_list, axis=0), 4)[0]
         
     return loss_list, mean_loss, coef_list, avg_coefs
-
-def print_bad_predictions(reg_model, data, gt, threshold):
-    """
-    print list of predicted ladder score vs. ground truth for all countries where
-    the prediction is worse than a given threshold
-    
-    returns: list of tuples [(pred_1, gt_1), ... , (pred_n, gt_n)]
-    """
-    pred_arr = reg_model.predict(data)
-    pred_vs_gt = gt.copy(deep=True)
-    pred_vs_gt["Prediction"] = pred_arr
-    for country in pred_vs_gt.index:
-        if abs(pred_vs_gt.loc[country,"Ladder score"] - pred_vs_gt.loc[country,"Prediction"]) > threshold:
-            print(pred_vs_gt.loc[country], "\n")
-    return
     
     
 def corr_counter_old(corr, threshold=0.85, verbose=False):
@@ -105,6 +90,50 @@ def corr_counter(corr):
         for i in range(0, corr.shape[1]):   
             corr_dict[name] = sum(abs(values))
     return corr_dict
+
+
+def print_bad_predictions(reg_model, data, gt, threshold):
+    """
+    print list of predicted ladder score vs. ground truth for all countries where
+    the prediction is worse than a given threshold
+    
+    returns: list of tuples [(pred_1, gt_1), ... , (pred_n, gt_n)]
+    """
+    pred_arr = reg_model.predict(data)
+    pred_vs_gt = gt.copy(deep=True)
+    pred_vs_gt["Prediction"] = pred_arr
+    for country in pred_vs_gt.index:
+        if abs(pred_vs_gt.loc[country,"Ladder score"] - pred_vs_gt.loc[country,"Prediction"]) > threshold:
+            print(pred_vs_gt.loc[country], "\n")
+    return
+
+
+def visualize_predictions(reg_model, data, gt):
+    """
+    create scatterplot with predicted latter scores on x-axis and ground truth on y-axis
+    """
+    
+    if type(reg_model)==type(sklearn.linear_model.LinearRegression()):
+        title = "Least squares, alpha = " + str(reg_model.alpha_)
+    elif type(reg_model)==type(sklearn.linear_model.Ridge()) or type(reg_model)==type(sklearn.linear_model.RidgeCV()):
+        title = "Ridge, alpha = " + str(reg_model.alpha_)
+    elif type(reg_model)==type(sklearn.linear_model.Lasso()) or type(reg_model)==type(sklearn.linear_model.LassoCV()):
+        title = "Lasso, alpha = " + str(reg_model.alpha_)
+    else:
+        title = ""
+    
+    pred_vals = reg_model.predict(data)
+    gt_vals = gt.loc[:,"Ladder score"]
+    
+    fig, ax = plt.subplots(figsize=(5, 5))
+    plt.scatter(pred_vals, gt_vals)
+    ax.plot([0, 1], [0, 1], transform=ax.transAxes, ls="--", c="red")
+    plt.ylabel("Ground Truth")
+    plt.xlabel("Predicted Ladder score")
+    plt.xlim([2,8])
+    plt.ylim([2,8])
+    plt.title(title)
+    return
 
 """
                             remove before submission
