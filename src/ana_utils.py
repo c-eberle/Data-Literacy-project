@@ -113,18 +113,10 @@ def visualize_predictions(reg_model, data, gt):
     create scatterplot with predicted latter scores on x-axis and ground truth on y-axis
     """
     
-    if type(reg_model)==type(sklearn.linear_model.LinearRegression()):
-        title = "Least squares, alpha = " + str(reg_model.alpha_)
-    elif type(reg_model)==type(sklearn.linear_model.Ridge()) or type(reg_model)==type(sklearn.linear_model.RidgeCV()):
-        title = "Ridge, alpha = " + str(reg_model.alpha_)
-    elif type(reg_model)==type(sklearn.linear_model.Lasso()) or type(reg_model)==type(sklearn.linear_model.LassoCV()):
-        title = "Lasso, alpha = " + str(reg_model.alpha_)
-    else:
-        title = ""
-    
     pred_vals = reg_model.predict(data)
     gt_vals = gt.loc[:,"Ladder score"]
     
+    title=get_title(reg_model) + ", alpha = " + str(reg_model.alpha_)
     fig, ax = plt.subplots(figsize=(5, 5))
     plt.scatter(pred_vals, gt_vals)
     ax.plot([0, 1], [0, 1], transform=ax.transAxes, ls="--", c="red")
@@ -134,6 +126,34 @@ def visualize_predictions(reg_model, data, gt):
     plt.ylim([2,8])
     plt.title(title)
     return
+
+def visualize_coefs(reg_model, indicators, n):
+    """
+    plot values of largest n coefficients
+    """
+    coef_df = pd.DataFrame(reg_model.coef_, columns=["Coefficient"], index=indicators)   
+    coef_df.sort_values("Coefficient", inplace=True)
+    coef_df.iloc[:n,:].plot(kind="barh")
+    plt.axvline(x=0, color="grey")
+    plt.xlim([-0.02, 0.02]) #xlim is based on a first test with LassoCV, range may need to be adjusted
+    plt.title(get_title(reg_model))
+    
+    return
+
+def get_title(reg_model):
+    """
+    helper function to plot titles
+    """
+    if type(reg_model)==type(sklearn.linear_model.LinearRegression()):
+        title = "Least Squares"
+    elif type(reg_model)==type(sklearn.linear_model.Ridge()) or type(reg_model)==type(sklearn.linear_model.RidgeCV()):
+        title = "Ridge"
+    elif type(reg_model)==type(sklearn.linear_model.Lasso()) or type(reg_model)==type(sklearn.linear_model.LassoCV()):
+        title = "Lasso"
+    else:
+        title = ""
+        
+    return title
 
 """
                             remove before submission
