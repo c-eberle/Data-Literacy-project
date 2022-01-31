@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import sklearn
-from sklearn.linear_model import LinearRegression
 from collections import Counter
 
 
@@ -35,7 +34,7 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling):
     """
     loss_list = []
     coef_list = []
-
+    
     assert scaling in ["normalize", "standardize", "no_scaling"]
 
     if scaling == "normalize":
@@ -46,7 +45,11 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling):
     for i in range(0,n):
         train, test, train_gt, test_gt = split_data(data, gt, test_size)
         
-        reg = reg_model.fit(train, train_gt)
+        if type(reg_model)==type(sklearn.linear_model.Lasso()) or type(reg_model)==type(sklearn.linear_model.LassoCV()):
+            reg = reg_model.fit(train, np.ravel(train_gt))
+        else:
+        	reg = reg_model.fit(train, train_gt)
+            
         test_pred = reg.predict(test)
         loss = sklearn.metrics.mean_squared_error(test_gt, test_pred)
         coefs = reg.coef_
@@ -61,3 +64,61 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling):
     avg_coefs = np.around(np.mean(coef_list, axis=0), 4)[0]
         
     return loss_list, mean_loss, coef_list, avg_coefs
+
+def print_bad_predictions(reg_model, data, gt, threshold):
+    """
+    print list of predicted ladder score vs. ground truth for all countries where
+    the prediction is worse than a given threshold
+    
+    returns: list of tuples [(pred_1, gt_1), ... , (pred_n, gt_n)]
+    """
+    pred_arr = reg_model.predict(data)
+    pred_vs_gt = gt.copy(deep=True)
+    pred_vs_gt["Prediction"] = pred_arr
+    for country in pred_vs_gt.index:
+        if abs(pred_vs_gt.loc[country,"Ladder score"] - pred_vs_gt.loc[country,"Prediction"]) > threshold:
+            print(pred_vs_gt.loc[country], "\n")
+    return
+    
+    
+def corr_counter_old(corr, threshold=0.85, verbose=False):
+    corr_dict = {}
+    for name, values in corr.iteritems():
+        if verbose:
+            print()
+            print('\nTarget indicator: ', name)
+            print('Correlated Indicators:')
+        corr_count = 0
+        for i in range(0, corr.shape[1]):   
+            if threshold < abs(values[i]) < 1:
+                name = corr.columns[i]
+                if verbose:
+                    print('{name}: {value}'.format(name=name, value=values[i]))
+                corr_count += 1
+
+        corr_dict[name] = corr_count
+    return corr_dict
+
+def corr_counter(corr):
+    corr_dict = {}
+    for name, values in corr.iteritems():
+        for i in range(0, corr.shape[1]):   
+            corr_dict[name] = sum(abs(values))
+    return corr_dict
+
+"""
+                            remove before submission
+                                ↓↓↓↓↓↓↓↓↓↓↓
+############################### some testing ######################################
+from sklearn import linear_model
+
+wb_data = pd.read_csv("../data/wb_data.csv", index_col="Country Name")
+wb_data_short = pd.read_csv("../data/wb_data_short.csv", index_col="Country Name")
+whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
+
+test_size=1
+alphas = [0.01, 0.1, 1, 10]
+lasso_cv = sklearn.linear_model.LassoCV(alphas=alphas, normalize=True)
+
+loss_list, mean_loss, coef_list, avg_coefs, test_country_list = n_fold_ceval(reg_model=lasso_cv, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="no_scaling")
+"""
