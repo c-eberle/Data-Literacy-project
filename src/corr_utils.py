@@ -53,6 +53,7 @@ def sklearn_vif(exogs, data):
 
     # initialize dictionaries
     vif_dict, tolerance_dict = {}, {}
+    epsilon = 1e6
 
     # form input data for each exogenous variable
     for exog in exogs:
@@ -63,7 +64,7 @@ def sklearn_vif(exogs, data):
         r_squared = LinearRegression().fit(X, y).score(X, y)
 
         # calculate VIF
-        vif = 1/(1 - r_squared)
+        vif = 1/(1 - r_squared + epsilon)
         vif_dict[exog] = round(vif, 1)
 
         # calculate tolerance
