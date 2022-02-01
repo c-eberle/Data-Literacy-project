@@ -49,8 +49,8 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling, calc_adj_r_squared=
         if type(reg_model)==type(sklearn.linear_model.Lasso()) or type(reg_model)==type(sklearn.linear_model.LassoCV()):
             reg = reg_model.fit(train, np.ravel(train_gt))
         else:
-        	reg = reg_model.fit(train, train_gt)
-            
+            reg = reg_model.fit(train, train_gt)    
+
         test_pred = reg.predict(test)
         loss = sklearn.metrics.mean_squared_error(test_gt, test_pred)
         coefs = reg.coef_

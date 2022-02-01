@@ -7,6 +7,7 @@ import pandas as pd
 import sklearn
 from sklearn.linear_model import LinearRegression
 from collections import Counter
+from . import ana_utils
 
 def corr_counter(corr):
     corr_dict = {}
@@ -35,6 +36,7 @@ def corr_counter_old(corr, threshold=0.85, verbose=False):
 
 
 def ind_removal_sim(num_indicators_list, sample_reps, model, n, data, gt, test_size=30, scaling="normalize"):
+    mean_loss_list, std_list = [], []
     for num_indicators in num_indicators_list:
         mean_errors = []
         mean_coef_size = []
@@ -47,10 +49,14 @@ def ind_removal_sim(num_indicators_list, sample_reps, model, n, data, gt, test_s
             mean_abs_coef = np.mean(abs(avg_coefs)) * len(avg_coefs)
             mean_coef_size.append(mean_abs_coef)
 
+        mean_loss_list.append(np.mean(mean_errors))
+        std_list.append(np.std(mean_errors))
         print("Number of indicators", num_indicators)
         print("Avg. Loss", np.mean(mean_errors))
         print("Loss STD", np.std(mean_errors))
-        print(" Avg. Total Coef. Size", np.mean(mean_coef_size), "\n")
+        print("Avg. Total Coef. Size", np.mean(mean_coef_size), "\n")
+
+    return mean_loss_list, std_list
 
 
 def pearsons_reduction(data, target_size): 
