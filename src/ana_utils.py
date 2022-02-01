@@ -139,8 +139,8 @@ def visualize_coefs(reg_model, indicators, n):
     else:
         raise Exception("reg_model not recognized")
         
-    coef_df = pd.DataFrame(coefs, columns=["Coefficient"], index=indicators)   
-    coef_df.sort_values("Coefficient", inplace=True)
+    coef_df = pd.DataFrame(coefs, columns=["Coefficient"], index=indicators)
+    coef_df.sort_values("Coefficient", inplace=True, key=abs, ascending=False)
     
     title=get_title(reg_model)
     coef_df.iloc[:n,:].plot(kind="barh")
@@ -148,7 +148,6 @@ def visualize_coefs(reg_model, indicators, n):
     #plt.xlim([-0.02, 0.02]) #xlim is based on a first test with LassoCV, range may need to be adjusted
     plt.title(title)
     
-    return
 
 def get_title(reg_model):
     """
@@ -165,6 +164,11 @@ def get_title(reg_model):
         
     return title
 
+def visualize_alphas(alphas, model_mean_losses):
+    """
+    
+    """
+
 """
                             remove before submission
                                 ↓↓↓↓↓↓↓↓↓↓↓
@@ -176,13 +180,13 @@ wb_data = pd.read_csv("../data/wb_data.csv", index_col="Country Name")
 wb_data_short = pd.read_csv("../data/wb_data_short.csv", index_col="Country Name")
 whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
 
-test_size=1
-alphas = [0.01, 0.1, 1, 10]
-lasso_cv = sklearn.linear_model.LassoCV(alphas=alphas, normalize=True)
+test_size=30
+alphas = [0.0001, 0.001, 0.01, 0.1, 1, 10, 100]
+lasso_cv = sklearn.linear_model.LassoCV(alphas=alphas)
 
-loss_list, mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=lasso_cv, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="no_scaling")
+loss_list, mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=lasso_cv, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="normalize")
 
-visualize_coefs(lasso_cv, wb_data.columns.values, 5)
+visualize_coefs(lasso_cv, wb_data.columns.values, 10)
 
 from sklearn import linear_model
 
