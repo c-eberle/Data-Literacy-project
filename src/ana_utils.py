@@ -68,7 +68,12 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling, calc_adj_r_squared=
     # calculate and round average coefficients
     avg_coefs = np.around(np.mean(coef_list, axis=0), 4)[0]
 
+    # calculate adjusted r-squared 
+    avg_adj_r_squared = np.mean(adj_r_squared_list)
+
+
     if calc_adj_r_squared:
+        return loss_list, mean_loss, coef_list, avg_coefs, avg_adj_r_squared
 
         
     return loss_list, mean_loss, coef_list, avg_coefs
