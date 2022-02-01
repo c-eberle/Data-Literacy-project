@@ -24,7 +24,7 @@ def split_data(data, gt, test_size=30):
     return train_set, test_set, train_gt, test_gt
 
 
-def n_fold_ceval(reg_model, n, data, gt, test_size, scaling):
+def n_fold_ceval(reg_model, n, data, gt, test_size, scaling, calc_adj_r_squared=False):
     """
     perform n-fold validation
     
@@ -34,6 +34,7 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling):
     """
     loss_list = []
     coef_list = []
+    adj_r_squared_list =[]
     
     assert scaling in ["normalize", "standardize", "no_scaling"]
 
@@ -56,12 +57,19 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling):
         loss_list.append(loss)
         coef_list.append(coefs)
 
+        # calculate adjusted r-squared
+        adj_r_squared = 1 - ( 1- reg_model.score(train, train_gt) ) * ( len(train_gt) - 1 ) / ( len(train_gt) - train.shape[1] - 1 )
+        adj_r_squared_list.append(adj_r_squared)
+
     # calculate mean loss
     loss_arr = np.array(loss_list)
     mean_loss = loss_arr.mean()
 
     # calculate and round average coefficients
     avg_coefs = np.around(np.mean(coef_list, axis=0), 4)[0]
+
+    if calc_adj_r_squared:
+
         
     return loss_list, mean_loss, coef_list, avg_coefs
     

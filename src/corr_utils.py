@@ -34,6 +34,25 @@ def corr_counter_old(corr, threshold=0.85, verbose=False):
     return corr_dict
 
 
+def ind_removal_sim(num_indicators_list, sample_reps, model, n, data, gt, test_size=30, scaling="normalize"):
+    for num_indicators in num_indicators_list:
+        mean_errors = []
+        mean_coef_size = []
+        for j in range(0, sample_reps):
+            wb_data_rand_reduced = data.sample(num_indicators, axis=1)
+            loss_list, mean_loss, coef_list, avg_coefs = ana_utils.n_fold_ceval(reg_model=model, n=n, data=wb_data_rand_reduced, gt=gt, test_size=test_size, scaling=scaling)
+            
+            mean_errors.append(mean_loss)
+
+            mean_abs_coef = np.mean(abs(avg_coefs)) * len(avg_coefs)
+            mean_coef_size.append(mean_abs_coef)
+
+        print("Number of indicators", num_indicators)
+        print("Avg. Loss", np.mean(mean_errors))
+        print("Loss STD", np.std(mean_errors))
+        print(" Avg. Total Coef. Size", np.mean(mean_coef_size), "\n")
+
+
 def pearsons_reduction(data, target_size): 
     reduced_data = data.copy(deep=True)
     remove_limit = len(data.columns) - target_size
