@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sklearn
 from collections import Counter
+from src import vis_utils
 
 
 def split_data(data, gt, test_size=30):
@@ -120,6 +121,21 @@ def print_bad_predictions(reg_model, data, gt, threshold):
             print(pred_vs_gt.loc[country], "\n")
     return
 
+def get_largest_coefs(reg_model, indicators, n):
+    """
+    get values of largest n coefficients
+    """
+    if vis_utils.get_title(reg_model) == "Least Squares" or vis_utils.get_title(reg_model) == "Ridge":
+        coefs = reg_model.coef_[0]
+    elif vis_utils.get_title(reg_model) == "Lasso":
+        coefs = reg_model.coef_
+    else:
+        raise Exception("reg_model not recognized")
+        
+    coef_df = pd.DataFrame(coefs, columns=["Coefficient"], index=indicators)
+    coef_df.sort_values("Coefficient", inplace=True, key=abs, ascending=False)
+    
+    return coef_df.iloc[:n]
 
 """
                             remove before submission

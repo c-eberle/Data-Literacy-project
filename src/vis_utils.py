@@ -62,6 +62,8 @@ def get_title(reg_model):
         title = "Ridge"
     elif type(reg_model)==type(sklearn.linear_model.Lasso()) or type(reg_model)==type(sklearn.linear_model.LassoCV()):
         title = "Lasso"
+    elif type(reg_model)==type(sklearn.cross_decomposition.PLSRegression()):
+        title = "Partial Least Squares"
     else:
         title = ""
         

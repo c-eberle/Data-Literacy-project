@@ -87,7 +87,7 @@ def multi_ceval(num_indicator_list, data, verbose, **ceval_kwargs):
         pearson_mean_loss_list.append(mean_loss)
         pearson_std_list.append(np.std(loss_list))
         if verbose:#
-            print("Number of indicators:" i)
+            print("Number of indicators:", i)
             print("Mean loss:", mean_loss)
             print("STD of the Loss:", np.std(loss_list))
             print("Adjusted R-Squared: ", adj_r_squared)
@@ -141,3 +141,21 @@ def vif_reduction(data, target_size):
 
     return vif_sorted_column_list
 
+
+
+"""
+############ Testing and debugging area, remove before submission ############
+wb_data = pd.read_csv("../data/wb_data.csv", index_col="Country Name")
+wb_data_short = pd.read_csv("../data/wb_data_short.csv", index_col="Country Name")
+whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
+wb_data_pear_sorted = pd.read_csv("../data/wb_data_pear_sorted.csv").set_index(wb_data.index, inplace=True)
+wb_data_vif_sorted = pd.read_csv("../data/wb_data_vif_sorted.csv").set_index(wb_data.index, inplace=True)
+
+ridge = sklearn.linear_model.Ridge()
+test_size = 30
+num_indicator_list = [10, 20, 30, 40, 50, 75, 100, 121]
+ceval_kwargs = {"reg_model" : ridge, "n" : 2000, "gt" : whr_data, "test_size" : test_size, "scaling" : "normalize", "calc_adj_r_squared" : True}
+
+
+pearson_mean_loss_list, _ = multi_ceval(num_indicator_list, wb_data_pear_sorted, True, **ceval_kwargs)
+"""
