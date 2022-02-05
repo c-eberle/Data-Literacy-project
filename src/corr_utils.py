@@ -62,6 +62,7 @@ def ind_removal_sim(num_indicators_list, sample_reps, model, n, data, gt, test_s
 def pearsons_reduction(data, target_size): 
     reduced_data = data.copy(deep=True)
     remove_limit = len(data.columns) - target_size
+    corr_sorted_column_list = []
     
     for i in range(0, remove_limit):
         indicator_corr = reduced_data.corr(method="pearson")
@@ -70,15 +71,37 @@ def pearsons_reduction(data, target_size):
         most_correlated_indicator = max(corr_dict, key=corr_dict.get)
         #print(max(corr_dict.values()))
         reduced_data.drop(columns=most_correlated_indicator, inplace=True)
+        corr_sorted_column_list.append(most_correlated_indicator)
 
-    return reduced_data
+    return corr_sorted_column_list
 
+
+def multi_ceval(num_indicator_list, data, verbose, **ceval_kwargs):
+    pearson_mean_loss_list = []
+    pearson_std_list = []
+
+    for i in num_indicator_list:
+
+        ceval_kwargs["data"] = data.iloc[:,:i]
+        loss_list, mean_loss, coef_list, avg_coefs, adj_r_squared  = ana_utils.n_fold_ceval(**ceval_kwargs)
+        pearson_mean_loss_list.append(mean_loss)
+        pearson_std_list.append(np.std(loss_list))
+        if verbose:#
+            print("Number of indicators:" i)
+            print("Mean loss:", mean_loss)
+            print("STD of the Loss:", np.std(loss_list))
+            print("Adjusted R-Squared: ", adj_r_squared)
+            print("The average size of the coefficients:", np.mean(abs(avg_coefs)), "\n")
+
+    return pearson_mean_loss_list, pearson_std_list
+
+    
 
 def sklearn_vif(exogs, data):
 
     # initialize dictionaries
     vif_dict, tolerance_dict = {}, {}
-    epsilon = 1e6
+
 
     # form input data for each exogenous variable
     for exog in exogs:
@@ -89,7 +112,9 @@ def sklearn_vif(exogs, data):
         r_squared = LinearRegression().fit(X, y).score(X, y)
 
         # calculate VIF
-        vif = 1/(1 - r_squared + epsilon)
+        np.seterr(divide='ignore') # ignore division by zero errors in case of perfect correlation
+
+        vif = 1/(1 - r_squared)
         vif_dict[exog] = round(vif, 1)
 
         # calculate tolerance
@@ -102,17 +127,17 @@ def sklearn_vif(exogs, data):
     return df_vif
 
 
-def vif_reduction(data, drop_batch, target_size):
+def vif_reduction(data, target_size):
     reduced_data = data.copy(deep=True)
-    iterations = round((len(data.columns) - target_size) / drop_batch)
+    remove_limit = len(data.columns) - target_size
+    vif_sorted_column_list = []
     
-    for i in range(0, iterations):
+    for i in range(0, remove_limit):
         wb_vif = sklearn_vif(reduced_data.columns, reduced_data)
+        ind_to_drop = wb_vif["VIF"].idxmax()
+        reduced_data.drop(columns=ind_to_drop, inplace=True)
+        #print(ind_to_drop)
+        vif_sorted_column_list.append(ind_to_drop)
 
-        drop_list = list(wb_vif["VIF"].sort_values()[-drop_batch:].index)
-        reduced_data.drop(columns=drop_list, inplace=True)
-
-    return reduced_data
-
-
+    return vif_sorted_column_list
 
