@@ -24,7 +24,7 @@ def split_data(data, gt, test_size=30):
     return train_set, test_set, train_gt, test_gt
 
 
-def n_fold_ceval(reg_model, n, data, gt, test_size, scaling, calc_adj_r_squared=False):
+def n_fold_ceval(reg_model, n, data, gt, test_size, scaling):
     """
     perform n-fold validation
     
@@ -34,7 +34,6 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling, calc_adj_r_squared=
     """
     loss_list = []
     coef_list = []
-    adj_r_squared_list =[]
     
     assert scaling in ["normalize", "standardize", "no_scaling"]
 
@@ -49,17 +48,13 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling, calc_adj_r_squared=
         if type(reg_model)==type(sklearn.linear_model.Lasso()) or type(reg_model)==type(sklearn.linear_model.LassoCV()):
             reg = reg_model.fit(train, np.ravel(train_gt))
         else:
-            reg = reg_model.fit(train, train_gt)    
-
+        	reg = reg_model.fit(train, train_gt)
+            
         test_pred = reg.predict(test)
         loss = sklearn.metrics.mean_squared_error(test_gt, test_pred)
         coefs = reg.coef_
         loss_list.append(loss)
         coef_list.append(coefs)
-
-        # calculate adjusted r-squared
-        adj_r_squared = 1 - ( 1- reg_model.score(train, train_gt) ) * ( len(train_gt) - 1 ) / ( len(train_gt) - train.shape[1] - 1 )
-        adj_r_squared_list.append(adj_r_squared)
 
     # calculate mean loss
     loss_arr = np.array(loss_list)
@@ -67,14 +62,6 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling, calc_adj_r_squared=
 
     # calculate and round average coefficients
     avg_coefs = np.around(np.mean(coef_list, axis=0), 4)[0]
-
-    # calculate adjusted r-squared 
-    avg_adj_r_squared = np.mean(adj_r_squared_list)
-
-
-    if calc_adj_r_squared:
-        return loss_list, mean_loss, coef_list, avg_coefs, avg_adj_r_squared
-
         
     return loss_list, mean_loss, coef_list, avg_coefs
     
@@ -121,85 +108,24 @@ def print_bad_predictions(reg_model, data, gt, threshold):
     return
 
 
-def visualize_predictions(reg_model, data, gt):
-    """
-    create scatterplot with predicted latter scores on x-axis and ground truth on y-axis
-    """
-    
-    pred_vals = reg_model.predict(data)
-    gt_vals = gt.loc[:,"Ladder score"]
-    
-    #title=get_title(reg_model) + ", alpha = " + str(reg_model.alpha_)
-    title=get_title(reg_model)
-    fig, ax = plt.subplots(figsize=(5, 5))
-    plt.scatter(pred_vals, gt_vals)
-    ax.plot([0, 1], [0, 1], transform=ax.transAxes, ls="--", c="red")
-    plt.ylabel("Ground Truth")
-    plt.xlabel("Predicted Ladder score")
-    plt.xlim([2,8])
-    plt.ylim([2,8])
-    plt.title(title)
-    return
-
-def visualize_coefs(reg_model, indicators, n):
-    """
-    plot values of largest n coefficients
-    """
-    if get_title(reg_model) == "Least Squares" or get_title(reg_model) == "Ridge":
-        coefs = reg_model.coef_[0]
-    elif get_title(reg_model) == "Lasso":
-        coefs = reg_model.coef_
-    else:
-        raise Exception("reg_model not recognized")
-        
-    coef_df = pd.DataFrame(coefs, columns=["Coefficient"], index=indicators)
-    coef_df.sort_values("Coefficient", inplace=True, key=abs, ascending=False)
-    
-    title=get_title(reg_model)
-    coef_df.iloc[:n,:].plot(kind="barh")
-    plt.axvline(x=0, color="grey")
-    #plt.xlim([-0.02, 0.02]) #xlim is based on a first test with LassoCV, range may need to be adjusted
-    plt.title(title)
-    
-
-def get_title(reg_model):
-    """
-    helper function to plot titles
-    """
-    if type(reg_model)==type(sklearn.linear_model.LinearRegression()):
-        title = "Least Squares"
-    elif type(reg_model)==type(sklearn.linear_model.Ridge()) or type(reg_model)==type(sklearn.linear_model.RidgeCV()):
-        title = "Ridge"
-    elif type(reg_model)==type(sklearn.linear_model.Lasso()) or type(reg_model)==type(sklearn.linear_model.LassoCV()):
-        title = "Lasso"
-    else:
-        title = ""
-        
-    return title
-
-def visualize_alphas(alphas, model_mean_losses):
-    """
-    
-    """
-
 """
                             remove before submission
                                 ↓↓↓↓↓↓↓↓↓↓↓
 ############################### some testing ######################################
 
 from sklearn import linear_model
+import vis_utils
 
 wb_data = pd.read_csv("../data/wb_data.csv", index_col="Country Name")
 wb_data_short = pd.read_csv("../data/wb_data_short.csv", index_col="Country Name")
 whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
 
 test_size=30
-alphas = [0.0001, 0.001, 0.01, 0.1, 1, 10, 100]
-lasso_cv = sklearn.linear_model.LassoCV(alphas=alphas)
+lasso = sklearn.linear_model.Lasso()
 
-loss_list, mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=lasso_cv, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="normalize")
+loss_list, mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=lasso, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="normalize")
 
-visualize_coefs(lasso_cv, wb_data.columns.values, 10)
+vis_utils.visualize_coefs(lasso, wb_data.columns.values, 10)
 
 from sklearn import linear_model
 
@@ -209,5 +135,29 @@ whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
 
 test_size=1
 ridge = sklearn.linear_model.Ridge()
-loss_list, mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=ridge, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="no_scaling")
+loss_list, mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=ridge, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="normalize")
+
+from sklearn import linear_model
+
+wb_data = pd.read_csv("../data/wb_data.csv", index_col="Country Name")
+wb_data_short = pd.read_csv("../data/wb_data_short.csv", index_col="Country Name")
+whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
+
+test_size=5
+alphas = [0.001, 0.01, 0.05, 0.075, 0.1, 0.0125, 0.15, 0.25, 0.5, 1, 10, 100]
+
+# ridge mean loss list and lasso mean loss list
+rml_list = []
+lml_list = []
+
+for alpha in alphas:
+    ridge = sklearn.linear_model.Ridge(alpha=alpha)    
+    loss_list, ridge_mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=ridge, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="normalize")
+    print("Mean loss for Ridge (alpha =", alpha, "):", ridge_mean_loss)
+    rml_list.append(ridge_mean_loss)
+    
+    lasso = sklearn.linear_model.Lasso(alpha=alpha)
+    loss_list, lasso_mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=ridge, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="normalize")
+    print("Mean loss for Lasso (alpha =", alpha, "):", lasso_mean_loss)
+    lml_list.append(lasso_mean_loss)
 """
