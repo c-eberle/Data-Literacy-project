@@ -89,32 +89,6 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling, calc_adj_r_squared=
 
         
     return loss_list, mean_loss, coef_list, avg_coefs
-    
-    
-def corr_counter_old(corr, threshold=0.85, verbose=False):
-    corr_dict = {}
-    for name, values in corr.iteritems():
-        if verbose:
-            print()
-            print('\nTarget indicator: ', name)
-            print('Correlated Indicators:')
-        corr_count = 0
-        for i in range(0, corr.shape[1]):   
-            if threshold < abs(values[i]) < 1:
-                name = corr.columns[i]
-                if verbose:
-                    print('{name}: {value}'.format(name=name, value=values[i]))
-                corr_count += 1
-
-        corr_dict[name] = corr_count
-    return corr_dict
-
-def corr_counter(corr):
-    corr_dict = {}
-    for name, values in corr.iteritems():
-        for i in range(0, corr.shape[1]):   
-            corr_dict[name] = sum(abs(values))
-    return corr_dict
 
 
 def print_bad_predictions(reg_model, data, gt, threshold):
@@ -146,52 +120,19 @@ def get_largest_coefs(reg_model, indicators, n):
     
     return coef_df.iloc[:n]
 
-"""
-                            remove before submission
-                                ↓↓↓↓↓↓↓↓↓↓↓
-############################### some testing ######################################
 
-from sklearn import linear_model
-import vis_utils
-
-wb_data = pd.read_csv("../data/wb_data.csv", index_col="Country Name")
-wb_data_short = pd.read_csv("../data/wb_data_short.csv", index_col="Country Name")
-whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
-
-test_size=30
-lasso = sklearn.linear_model.Lasso()
-
-loss_list, mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=lasso, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="normalize")
-
-vis_utils.visualize_coefs(lasso, wb_data.columns.values, 10)
-
-from sklearn import linear_model
-
-wb_data = pd.read_csv("../data/wb_data.csv", index_col="Country Name")
-wb_data_short = pd.read_csv("../data/wb_data_short.csv", index_col="Country Name")
-whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
-
-test_size=1
-ridge = sklearn.linear_model.Ridge()
-loss_list, mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=ridge, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="normalize")
-
-from sklearn.cross_decomposition import PLSRegression
-pls = pls = PLSRegression(n_components=3)
-
-wb_data = pd.read_csv("../data/wb_data.csv", index_col="Country Name")
-wb_data_short = pd.read_csv("../data/wb_data_short.csv", index_col="Country Name")
-whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
-
-wb_data_red = wb_data.copy(deep=True)
-test_size=30
-
-for i in range(0, 10):
-    _, pls_mean_loss, _, _, pls_adj_r_sq = n_fold_ceval(reg_model=pls, n=1000, data=wb_data_red, gt=whr_data, 
-                                                                        test_size=test_size, scaling="normalize", calc_adj_r_squared=True)
-    largest_coef = get_largest_coefs(pls, wb_data_red.columns.values, 1).index.values
-    print("Mean loss: ", pls_mean_loss)
-    print("Adjusted R-Squared: ", pls_adj_r_sq)
-    print("Removing coefficient ", largest_coef, "\n")
-    wb_data_red = wb_data_red.drop(largest_coef, axis=1)
-
-"""
+def get_largest_coef_pls(pls_model, indicators):
+    """
+    get values of largest coefficient
+    (partial least squares needs its own function because the coefficients are
+     a linear combination of indicators)
+    """
+    sum_components = np.zeros([pls_model.x_weights_.shape[0]])
+    # take weighted sum of components
+    for i in range(0,4): 
+        sum_components += pls_model.y_weights_[0,i] * pls_model.x_weights_[:,i]
+        
+    df_sum_comp = pd.DataFrame(sum_components, columns=["Coefficient"], index=indicators)
+    df_sum_comp.sort_values("Coefficient", inplace=True, key=abs, ascending=False)
+    
+    return df_sum_comp
