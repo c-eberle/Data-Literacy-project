@@ -35,12 +35,10 @@ def visualize_coefs(reg_model, indicators, n):
     """
     plot values of largest n coefficients
     """
-    if get_title(reg_model) == "Least Squares" or get_title(reg_model) == "Ridge":
-        coefs = reg_model.coef_[0]
-    elif get_title(reg_model) == "Lasso":
+    if get_title(reg_model) == "Lasso":
         coefs = reg_model.coef_
     else:
-        raise Exception("reg_model not recognized")
+        coefs = reg_model.coef_[0]
         
     coef_df = pd.DataFrame(coefs, columns=["Coefficient"], index=indicators)
     coef_df.sort_values("Coefficient", inplace=True, key=abs, ascending=False)
@@ -48,8 +46,9 @@ def visualize_coefs(reg_model, indicators, n):
     title=get_title(reg_model)
     coef_df.iloc[:n,:].plot(kind="barh")
     plt.axvline(x=0, color="grey")
-    #plt.xlim([-0.02, 0.02]) #xlim is based on a first test with LassoCV, range may need to be adjusted
     plt.title(title)
+    fname = title + "_coefs.pdf"
+    plt.savefig(fname=fname, format="pdf")
     
 
 def get_title(reg_model):
@@ -80,11 +79,20 @@ def visualize_alphas(alphas, mean_losses):
     
 
     plt.scatter(alphas, mean_losses[0])
-    plt.plot(alphas, mean_losses[0], label="Ridge")
-    
-    plt.scatter(alphas, mean_losses[1])
-    plt.plot(alphas, mean_losses[1], label="Lasso")
+    plt.plot(alphas, mean_losses[0], linestyle="solid", color="red", label="Ridge, test loss")
 
+    plt.scatter(alphas, mean_losses[1])
+    plt.plot(alphas, mean_losses[1], linestyle="dotted", color="red", label="Ridge, train loss")
+    
+    plt.scatter(alphas, mean_losses[2])
+    plt.plot(alphas, mean_losses[2], linestyle="solid", color="blue", label="Lasso, test loss")
+    
+    plt.scatter(alphas, mean_losses[3])
+    plt.plot(alphas, mean_losses[3], linestyle="dotted", color="blue", label="Lasso, train loss")
+    
+    plt.xlabel("alpha")
+    plt.ylabel("Mean Squared Error")
+    
     plt.legend()
     plt.xscale("log")
     plt.show()
