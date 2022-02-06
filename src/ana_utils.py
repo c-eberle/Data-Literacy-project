@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sklearn
 from collections import Counter
+import vis_utils
+from sklearn import preprocessing, linear_model
 
 
 def split_data(data, gt, test_size=30):
@@ -130,6 +132,19 @@ def print_bad_predictions(reg_model, data, gt, threshold):
             print(pred_vs_gt.loc[country], "\n")
     return
 
+def get_largest_coefs(reg_model, indicators, n):
+    """
+    get values of largest n coefficients
+    """
+    if vis_utils.get_title(reg_model) == "Lasso":
+        coefs = reg_model.coef_
+    else:
+        coefs = reg_model.coef_[0]
+        
+    coef_df = pd.DataFrame(coefs, columns=["Coefficient"], index=indicators)
+    coef_df.sort_values("Coefficient", inplace=True, key=abs, ascending=False)
+    
+    return coef_df.iloc[:n]
 
 """
                             remove before submission
@@ -159,28 +174,23 @@ whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
 test_size=1
 ridge = sklearn.linear_model.Ridge()
 loss_list, mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=ridge, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="normalize")
-
-from sklearn import linear_model
+"""
+from sklearn.cross_decomposition import PLSRegression
+pls = pls = PLSRegression(n_components=3)
 
 wb_data = pd.read_csv("../data/wb_data.csv", index_col="Country Name")
 wb_data_short = pd.read_csv("../data/wb_data_short.csv", index_col="Country Name")
 whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
 
-test_size=5
-alphas = [0.001, 0.01, 0.05, 0.075, 0.1, 0.0125, 0.15, 0.25, 0.5, 1, 10, 100]
+wb_data_red = wb_data.copy(deep=True)
+test_size=30
 
-# ridge mean loss list and lasso mean loss list
-rml_list = []
-lml_list = []
+for i in range(0, 10):
+    _, pls_mean_loss, _, _, pls_adj_r_sq = n_fold_ceval(reg_model=pls, n=1000, data=wb_data_red, gt=whr_data, 
+                                                                        test_size=test_size, scaling="normalize", calc_adj_r_squared=True)
+    largest_coef = get_largest_coefs(pls, wb_data_red.columns.values, 1).index.values
+    print("Mean loss: ", pls_mean_loss)
+    print("Adjusted R-Squared: ", pls_adj_r_sq)
+    print("Removing coefficient ", largest_coef, "\n")
+    wb_data_red = wb_data_red.drop(largest_coef, axis=1)
 
-for alpha in alphas:
-    ridge = sklearn.linear_model.Ridge(alpha=alpha)    
-    loss_list, ridge_mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=ridge, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="normalize")
-    print("Mean loss for Ridge (alpha =", alpha, "):", ridge_mean_loss)
-    rml_list.append(ridge_mean_loss)
-    
-    lasso = sklearn.linear_model.Lasso(alpha=alpha)
-    loss_list, lasso_mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=ridge, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="normalize")
-    print("Mean loss for Lasso (alpha =", alpha, "):", lasso_mean_loss)
-    lml_list.append(lasso_mean_loss)
-"""
