@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sklearn
 from collections import Counter
-import vis_utils
+from . import vis_utils
 from sklearn import preprocessing, linear_model
 
 
@@ -174,7 +174,7 @@ whr_data = pd.read_csv("../data/whr_data.csv", index_col="Country name")
 test_size=1
 ridge = sklearn.linear_model.Ridge()
 loss_list, mean_loss, coef_list, avg_coefs = n_fold_ceval(reg_model=ridge, n=1000, data=wb_data, gt=whr_data, test_size=test_size, scaling="normalize")
-"""
+
 from sklearn.cross_decomposition import PLSRegression
 pls = pls = PLSRegression(n_components=3)
 
@@ -194,3 +194,4 @@ for i in range(0, 10):
     print("Removing coefficient ", largest_coef, "\n")
     wb_data_red = wb_data_red.drop(largest_coef, axis=1)
 
+"""
