@@ -40,6 +40,32 @@ def corr_counter_old(corr, threshold=0.85, verbose=False):
     return corr_dict
 
 
+def coef_removal_sim(num_indicators, sample_reps, model, n, data, gt, test_size=30, scaling="normalize",verbose=True):
+    mean_errors0 = []
+    mean_errors1 = []
+    mean_errors5 = []
+    for j in range(0, sample_reps):
+        wb_data_rand_reduced = data.sample(num_indicators, axis=1)
+
+        for i in range(0, 6):
+            loss_list, mean_loss, mean_train_loss, coef_list, avg_coefs, adjusted_r_squared = ana_utils.n_fold_ceval(reg_model=model, n=n, data=wb_data_rand_reduced, gt=gt, test_size=test_size, scaling=scaling, calc_adj_r_squared=True)
+            largest_coef = ana_utils.get_largest_coefs(model, wb_data_rand_reduced.columns.values, 1).index.values
+            wb_data_rand_reduced = wb_data_rand_reduced.drop(largest_coef, axis=1)
+
+            if i == 0:
+                mean_errors0.append(mean_loss)
+            if i == 1:
+                mean_errors1.append(mean_loss)
+            if i == 5:
+                mean_errors5.append(mean_loss)
+
+    print(np.mean(mean_errors0))
+    print(np.mean(mean_errors1))
+    print(np.mean(mean_errors5))
+
+    
+
+
 def ind_removal_sim(num_indicators_list, sample_reps, model, n, data, gt, test_size=30, scaling="normalize"):
     mean_loss_list, std_list = [], []
     mean_train_loss_list = []
