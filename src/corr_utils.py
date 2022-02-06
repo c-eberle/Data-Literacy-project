@@ -9,11 +9,16 @@ from sklearn.linear_model import LinearRegression
 from collections import Counter
 from . import ana_utils
 
-def corr_counter(corr):
+def corr_counter(corr, sum_of_squares=False):
     corr_dict = {}
-    for name, values in corr.iteritems():
-        for i in range(0, corr.shape[1]):   
-            corr_dict[name] = sum(abs(values))
+    if sum_of_squares:
+            for name, values in corr.iteritems():
+                for i in range(0, corr.shape[1]):   
+                    corr_dict[name] = sum(values**2)
+    else:
+        for name, values in corr.iteritems():
+            for i in range(0, corr.shape[1]):   
+                corr_dict[name] = sum(abs(values))
     return corr_dict
 
 def corr_counter_old(corr, threshold=0.85, verbose=False):
@@ -37,29 +42,35 @@ def corr_counter_old(corr, threshold=0.85, verbose=False):
 
 def ind_removal_sim(num_indicators_list, sample_reps, model, n, data, gt, test_size=30, scaling="normalize"):
     mean_loss_list, std_list = [], []
+    mean_train_loss_list = []
     for num_indicators in num_indicators_list:
         mean_errors = []
+        mean_train_errors = []
         mean_coef_size = []
         for j in range(0, sample_reps):
             wb_data_rand_reduced = data.sample(num_indicators, axis=1)
-            loss_list, mean_loss, coef_list, avg_coefs = ana_utils.n_fold_ceval(reg_model=model, n=n, data=wb_data_rand_reduced, gt=gt, test_size=test_size, scaling=scaling)
+            loss_list, mean_loss, mean_train_loss, coef_list, avg_coefs, adjusted_r_squared = ana_utils.n_fold_ceval(reg_model=model, n=n, data=wb_data_rand_reduced, gt=gt, test_size=test_size, scaling=scaling, calc_adj_r_squared=True)
             
             mean_errors.append(mean_loss)
+            mean_train_errors.append(mean_train_loss)
 
             mean_abs_coef = np.mean(abs(avg_coefs)) * len(avg_coefs)
             mean_coef_size.append(mean_abs_coef)
 
         mean_loss_list.append(np.mean(mean_errors))
+        mean_train_loss_list.append(np.mean(mean_train_errors))
+
         std_list.append(np.std(mean_errors))
         print("Number of indicators", num_indicators)
         print("Avg. Loss", np.mean(mean_errors))
+        print("Avg. Train loss", np.mean(mean_train_errors))
         print("Loss STD", np.std(mean_errors))
         print("Avg. Total Coef. Size", np.mean(mean_coef_size), "\n")
 
-    return mean_loss_list, std_list
+    return mean_loss_list, mean_train_loss_list, std_list
 
 
-def pearsons_reduction(data, target_size): 
+def pearsons_reduction(data, target_size, sum_of_squares = False): 
     reduced_data = data.copy(deep=True)
     remove_limit = len(data.columns) - target_size
     corr_sorted_column_list = []
@@ -78,22 +89,25 @@ def pearsons_reduction(data, target_size):
 
 def multi_ceval(num_indicator_list, data, verbose, **ceval_kwargs):
     pearson_mean_loss_list = []
+    pearson_mean_train_loss_list = []
     pearson_std_list = []
 
     for i in num_indicator_list:
 
         ceval_kwargs["data"] = data.iloc[:,:i]
-        loss_list, mean_loss, coef_list, avg_coefs, adj_r_squared  = ana_utils.n_fold_ceval(**ceval_kwargs)
+        loss_list, mean_loss, mean_train_loss, coef_list, avg_coefs, adj_r_squared  = ana_utils.n_fold_ceval(**ceval_kwargs)
         pearson_mean_loss_list.append(mean_loss)
+        pearson_mean_train_loss_list.append(mean_train_loss)
         pearson_std_list.append(np.std(loss_list))
         if verbose:#
             print("Number of indicators:", i)
             print("Mean loss:", mean_loss)
+            print("Mean train loss:", mean_train_loss)
             print("STD of the Loss:", np.std(loss_list))
             print("Adjusted R-Squared: ", adj_r_squared)
             print("The average size of the coefficients:", np.mean(abs(avg_coefs)), "\n")
 
-    return pearson_mean_loss_list, pearson_std_list
+    return pearson_mean_loss_list, pearson_mean_train_loss_list, pearson_std_list
 
     
 
