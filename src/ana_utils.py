@@ -33,6 +33,7 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling, calc_adj_r_squared=
              list of arrays with the coeffcients for the n models, the average size for each coefficient (rounded)
     """
     loss_list = []
+    train_loss_list = []
     coef_list = []
     adj_r_squared_list =[]
     
@@ -52,18 +53,27 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling, calc_adj_r_squared=
             reg = reg_model.fit(train, train_gt)    
 
         test_pred = reg.predict(test)
+        train_pred = reg.predict(train)
         loss = sklearn.metrics.mean_squared_error(test_gt, test_pred)
+        train_loss = sklearn.metrics.mean_squared_error(train_gt, train_pred)
         coefs = reg.coef_
+
         loss_list.append(loss)
+        train_loss_list.append(train_loss)
         coef_list.append(coefs)
 
         # calculate adjusted r-squared
         adj_r_squared = 1 - ( 1- reg_model.score(train, train_gt) ) * ( len(train_gt) - 1 ) / ( len(train_gt) - train.shape[1] - 1 )
         adj_r_squared_list.append(adj_r_squared)
 
+
     # calculate mean loss
     loss_arr = np.array(loss_list)
     mean_loss = loss_arr.mean()
+
+    # calculate mean train loss
+    train_loss_arr = np.array(train_loss_list)
+    mean_train_loss = train_loss_arr.mean()
 
     # calculate and round average coefficients
     avg_coefs = np.around(np.mean(coef_list, axis=0), 4)[0]
@@ -73,7 +83,7 @@ def n_fold_ceval(reg_model, n, data, gt, test_size, scaling, calc_adj_r_squared=
 
 
     if calc_adj_r_squared:
-        return loss_list, mean_loss, coef_list, avg_coefs, avg_adj_r_squared
+        return loss_list, mean_loss, mean_train_loss, coef_list, avg_coefs, avg_adj_r_squared
 
         
     return loss_list, mean_loss, coef_list, avg_coefs
